@@ -301,3 +301,12 @@ Tutorials on how to troubleshoot and setup Docker
 * Documentation formatting suggestions
 
 All this, from implementation to testing, debugging, integration to end validation testing, was done manually. The solution submitted was reviewed, modified and tested end to end prior to submission.
+
+---
+
+## Author
+
+**Taarini Kumar**
+
+
+GitHub: https://github.com/taarinik04
