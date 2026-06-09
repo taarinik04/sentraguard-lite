@@ -1,21 +1,31 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Literal
 
 
 class ContextDoc(BaseModel):
     id: str
-    text: str
+    text: str = Field(
+        max_length=20000
+    )
 
 
 class Metadata(BaseModel):
-    app_id: Optional[str] = None
-    user_id: Optional[str] = None
-    request_id: Optional[str] = None
+    app_id: str
+    user_id: str
+    request_id: str
 
 
 class AnalyzeRequest(BaseModel):
-    prompt: str
-    context_docs: List[ContextDoc] = []
+    prompt: str = Field(
+        min_length=1,
+        max_length=20000
+    )
+
+    context_docs: List[ContextDoc] = Field(
+        default_factory=list,
+        max_length=3
+    )
+
     metadata: Metadata
 
 
@@ -25,9 +35,23 @@ class Reason(BaseModel):
 
 
 class AnalyzeResponse(BaseModel):
-    decision: str
-    risk_score: int
+    decision: Literal[
+        "allow",
+        "transform",
+        "block"
+    ]
+
+    risk_score: int = Field(
+        ge=0,
+        le=100
+    )
+
     risk_tags: List[str]
+
     sanitized_prompt: str
-    sanitized_context_docs: List[ContextDoc]
+
+    sanitized_context_docs: List[
+        ContextDoc
+    ]
+
     reasons: List[Reason]

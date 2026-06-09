@@ -1,0 +1,15 @@
+{
+    "decision": "block",
+    "risk_score": 50,
+    "risk_tags": [
+        "prompt_injection"
+    ],
+    "sanitized_prompt": "[BLOCKED]",
+    "sanitized_context_docs": [],
+    "reasons": [
+        {
+            "tag": "prompt_injection",
+            "evidence": "matched phrase: ignore previous instructions"
+        }
+    ]
+}

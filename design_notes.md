@@ -2,30 +2,30 @@
 
 ## Problem Statement
 
-The goal of this project was to develop a lightweight guardrails gateway that can check for prompts before they pass to a language model.
+The goal of this project was to develop a lightweight guardrails gateway that evaluates prompts before they are sent to a Large Language Model (LLM).
 
-The system is based on the detection of 3 major categories of risk:
+The system focuses on detecting three major categories of risk:
 
 * Prompt Injection
-Personally Identifiable Information (PII)
+* Personally Identifiable Information (PII)
 * RAG Injection
 
-The gateway analyses the risks detected, computes a risk score and provides a recommendation for action.
+The gateway analyzes detected risks, computes a risk score, and returns a policy decision.
 
 ---
 
 ## Detection Approach
 
-The idea for this assignment was to use a rule-based approach rather than a machine-learning based solution.
+A rule-based detection strategy was selected instead of a machine-learning approach.
 
-These were primarily due to:
+This decision was made because a rule-based system provides:
 
 * Simpler implementation
 * Faster execution
 * Easier debugging
-This is determined by the instructions you follow in your test, ensuring that it only depends on your own execution.
+* Deterministic and reproducible results
 
-Because the assignment was a concept-based exercise for guardrails, rather than one on model training, a pattern matching approach was appropriate.
+Since the assignment focuses on guardrails and policy enforcement rather than model training, pattern matching was an appropriate solution.
 
 ---
 
@@ -33,32 +33,33 @@ Because the assignment was a concept-based exercise for guardrails, rather than 
 
 ### FastAPI
 
-The choice of FastAPI was made due to the following features:
+FastAPI was selected because it provides:
 
-* Automatic request parameter validation using Pydantic.* Automatic validation of request parameters using Pydantic.
-* Built-in API documentation
+* Automatic request validation using Pydantic
+* High performance and low overhead
 * Simple endpoint creation
-* Lightweight deployment
+* Strong typing support
+* Easy deployment
 
-The framework allowed the API layer to remain small and easy to maintain.
+The framework allows the API layer to remain lightweight and maintainable.
 
 ### Streamlit
 
-The implementation of Streamlit was opted for the creation of a simple user interface that does not require a separate framework on the front end.
+Streamlit was chosen to provide a simple web interface without requiring a dedicated frontend framework.
 
-This enabled quick to generate working interface for prompt testing and display the analysis results.
+This enabled rapid development of an interactive interface for prompt analysis and result visualization.
 
 ### Docker
 
-Docker support was added to support the Application's ability to run consistently in various environments without a manual dependency installation.
+Docker support was added to ensure consistent execution across different environments without requiring manual dependency installation.
 
 ---
 
 ## Risk Scoring Design
 
-A scoring model was put in place with weights.
+The system uses a weighted risk-scoring model.
 
-When a detector fires a predetermined score is added:
+When a detector is triggered, a predefined score is added to the total risk score.
 
 | Risk Type        | Score |
 | ---------------- | ----- |
@@ -66,82 +67,89 @@ When a detector fires a predetermined score is added:
 | PII              | 30    |
 | RAG Injection    | 40    |
 
-The total of the risks which are detected is the final score.
+The final score is calculated by summing all triggered risk categories.
 
-This was selected for a number of reasons including that is a relatively easy approach to explain, test and modify.
+This approach was selected because it is easy to explain, test, audit, and modify.
 
 ---
 
 ## Decision Policy
 
-There are presently three decision levels:
+The system currently supports three policy decisions:
 
 | Score Range | Decision  |
 | ----------- | --------- |
-| 0 – 39      | Allow     |
-| 40 – 79     | Transform |
+| 0–39        | Allow     |
+| 40–79       | Transform |
 | 80+         | Block     |
 
-Using this policy, a moderate risk prompt will continue to be expressed after sanitization has been applied, and a highly suspicious prompt will not be expressed.
+In addition, high-confidence prompt injection patterns can trigger an immediate block decision.
+
+This policy ensures that moderate-risk content is sanitized before use, while highly suspicious content is prevented from reaching downstream systems.
 
 ---
 
 ## Tradeoffs
 
-A number of compromises were considered in the development.
-
 ### Simplicity vs Coverage
 
-The system focus is simplicity, rather than maximum detection coverage.
+The system prioritizes simplicity and explainability over maximum detection coverage.
 
-More sophisticated could see more attacks but would be more difficult and require more maintenance.
+More sophisticated detection techniques could identify additional attack patterns but would increase implementation complexity and maintenance requirements.
 
 ### Explainability vs Intelligence
 
-Pattern-based detection—gives results that are easy to explain.
+Pattern-based detection produces results that are easy to understand and justify.
 
-Logically more advanced methods based on machine learning can be used to increase the accuracy of the detected information, but they would be less transparent and consume more specialists.
+Machine-learning-based approaches may improve detection accuracy but are generally less transparent and require additional computational resources and maintenance effort.
 
 ---
 
 ## Limitations
 
-So far the current implementation has some known limitations:
+The current implementation has several limitations:
 
-Patterns can only be detected if they are pre-defined.
-Only email address and Customer Number/Phone Numbers are considered as PII.
-Context analysis relies on one of the keyword-match approach.
-There are no authentication mechanism in place.
-It doesn't come with any persistent storage or audit logging.
+* Detection is limited to predefined patterns and keywords
+* Only email addresses and phone numbers are currently treated as PII
+* Context analysis relies primarily on keyword matching
+* Authentication is not implemented
+* Persistent storage is not implemented
+* Audit logging is limited to application-level logs
 
-These restrictions have been allowed to ensure that the scope is in line with the requirements of the assignment.
+These limitations were accepted to keep the project aligned with the scope of the assignment.
 
 ---
 
 ## Future Improvements
 
-Possible future improvements:
+Potential future enhancements include:
 
-* Machine-learning-assisted detection
-* Additional PII categories
-* Configurable scoring policies
-Authorizing and controlling access to the data 9.Authorisation and access control 9.
-* Audit logging
+* Machine-learning-assisted prompt injection detection
+* Support for additional PII categories such as addresses and government identifiers
+* Configurable scoring policies and detector thresholds
+* Authentication and API key management
+* Structured audit logging and monitoring
+* Rate limiting and abuse detection
+* SIEM integration
 * Historical analysis dashboards
+* Advanced validation for vector database and RAG pipelines
 
 ---
 
 ## Testing Strategy
 
-Automated tests with positive and negative scenarios are included in the project.
+Automated tests are included to validate both positive and negative scenarios.
 
 Testing focuses on:
 
-* API behaviour
-* Detector functionality
-* PII redaction
+* API behavior
+* Prompt injection detection
+* RAG injection detection
+* PII detection and redaction
 * Risk scoring
 * Response validation
-Handling special cases like blank prompts
+* Input validation
+* Security policy enforcement
+* Edge cases and error handling
 
-This facilitates faster verification of changes, without manual testing.
+The test suite helps ensure that changes can be verified quickly and consistently without extensive manual testing.

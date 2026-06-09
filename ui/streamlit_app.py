@@ -1,15 +1,18 @@
+import os
 import streamlit as st
 import requests
 
 
-API_URL = "http://sentraguard-api:8000/analyze"
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000/analyze"
+)
 
 st.set_page_config(
     page_title="SentraGuard Lite",
     page_icon="🛡️",
     layout="wide"
 )
-
 
 
 st.markdown("""
@@ -76,7 +79,6 @@ h2 {
 """, unsafe_allow_html=True)
 
 
-
 st.markdown(
     "<h1>🛡️ SentraGuard Lite</h1>",
     unsafe_allow_html=True
@@ -89,6 +91,24 @@ st.caption(
 st.divider()
 
 
+# Sidebar Metadata
+st.sidebar.header("Request Metadata")
+
+app_id = st.sidebar.text_input(
+    "App ID",
+    value="sentraguard-ui"
+)
+
+user_id = st.sidebar.text_input(
+    "User ID",
+    value="user-001"
+)
+
+request_id = st.sidebar.text_input(
+    "Request ID",
+    value="req-001"
+)
+
 
 col1, col2 = st.columns(2)
 
@@ -100,11 +120,25 @@ with col1:
     )
 
 with col2:
-    context = st.text_area(
-        "Context Document",
-        height=250,
-        placeholder="Paste retrieved context here..."
+
+    context1 = st.text_area(
+        "Context Document 1",
+        height=120,
+        placeholder="Paste context document 1..."
     )
+
+    context2 = st.text_area(
+        "Context Document 2",
+        height=120,
+        placeholder="Paste context document 2..."
+    )
+
+    context3 = st.text_area(
+        "Context Document 3",
+        height=120,
+        placeholder="Paste context document 3..."
+    )
+
 
 analyze_button = st.button(
     "🛡️ Analyze Prompt",
@@ -112,21 +146,41 @@ analyze_button = st.button(
 )
 
 
-
 if analyze_button:
+
+    context_docs = []
+
+    if context1.strip():
+        context_docs.append(
+            {
+                "id": "doc-1",
+                "text": context1
+            }
+        )
+
+    if context2.strip():
+        context_docs.append(
+            {
+                "id": "doc-2",
+                "text": context2
+            }
+        )
+
+    if context3.strip():
+        context_docs.append(
+            {
+                "id": "doc-3",
+                "text": context3
+            }
+        )
 
     payload = {
         "prompt": prompt,
-        "context_docs": [
-            {
-                "id": "doc-1",
-                "text": context
-            }
-        ] if context else [],
+        "context_docs": context_docs,
         "metadata": {
-            "app_id": "streamlit",
-            "user_id": "demo-user",
-            "request_id": "demo-request"
+            "app_id": app_id,
+            "user_id": user_id,
+            "request_id": request_id
         }
     }
 
@@ -134,8 +188,11 @@ if analyze_button:
 
         response = requests.post(
             API_URL,
-            json=payload
+            json=payload,
+            timeout=10
         )
+
+        response.raise_for_status()
 
         result = response.json()
 
@@ -145,13 +202,13 @@ if analyze_button:
         score = result["risk_score"]
 
         if decision == "allow":
-            st.success("✅ Decision: ALLOW")
+            st.success("Decision: ALLOW")
 
         elif decision == "transform":
-            st.warning("⚠️ Decision: TRANSFORM")
+            st.warning("Decision: TRANSFORM")
 
         else:
-            st.error("🚫 Decision: BLOCK")
+            st.error("Decision: BLOCK")
 
         metric1, metric2 = st.columns(2)
 

@@ -1,8 +1,9 @@
+from typing import Any
+
 import re
 
 
 # Prompt Injection Detection
-
 
 PROMPT_INJECTION_PATTERNS = [
     "ignore previous instructions",
@@ -13,71 +14,106 @@ PROMPT_INJECTION_PATTERNS = [
 
 # RAG Injection Detection
 
-
 RAG_PATTERNS = [
     "override policy",
     "ignore guidelines",
     "system:",
     "ignore previous instructions",
-    "reveal secrets"
+    "reveal secrets",
+    "bypass restrictions",
+    "disregard instructions"
 ]
+
+
+# Scan Limits
+
+MAX_SCAN_LENGTH = 20000
 
 
 # PII Patterns
 
+EMAIL_PATTERN = re.compile(
+    r"\b[A-Za-z0-9._%+-]+"
+    r"@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+)
 
-EMAIL_REGEX = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
-
-PHONE_REGEX = r"\b\d{10}\b"
-
-
-
-# Prompt Injection Detector
+PHONE_PATTERN = re.compile(
+    r"(?:\+\d{1,3}[- ]?)?"
+    r"(?:\(?\d{2,5}\)?[- ]?)?"
+    r"\d{3,5}[- ]?\d{4,6}"
+)
 
 
-def detect_prompt_injection(text):
-    findings = []
+def detect_prompt_injection(
+    text: str
+) -> list[str]:
+    """
+    Detect known prompt injection phrases
+    within a user prompt.
+
+    Args:
+        text: User-supplied prompt.
+
+    Returns:
+        List of matched prompt injection patterns.
+    """
+
+    findings: list[str] = []
 
     for phrase in PROMPT_INJECTION_PATTERNS:
+
         if phrase.lower() in text.lower():
             findings.append(phrase)
 
     return findings
 
 
+def detect_pii(
+    text: str
+) -> tuple[list[str], list[str]]:
+    """
+    Detect email addresses and phone numbers
+    within a text string.
 
-# PII Detector
+    Args:
+        text: User input text.
 
+    Returns:
+        Tuple containing:
+        - list of emails
+        - list of phone numbers
+    """
 
-def detect_pii(text):
+    if len(text) > MAX_SCAN_LENGTH:
+        return [], []
 
-    emails = re.findall(
-        EMAIL_REGEX,
-        text
-    )
+    emails = EMAIL_PATTERN.findall(text)
 
-    phones = re.findall(
-        PHONE_REGEX,
-        text
-    )
+    phones = PHONE_PATTERN.findall(text)
 
     return emails, phones
 
 
+def redact_pii(
+    text: str
+) -> str:
+    """
+    Replace detected email addresses and
+    phone numbers with redaction tokens.
 
-# PII Redaction
+    Args:
+        text: Original user input.
 
+    Returns:
+        Sanitized text with PII removed.
+    """
 
-def redact_pii(text):
-
-    text = re.sub(
-        EMAIL_REGEX,
+    text = EMAIL_PATTERN.sub(
         "[REDACTED_EMAIL]",
         text
     )
 
-    text = re.sub(
-        PHONE_REGEX,
+    text = PHONE_PATTERN.sub(
         "[REDACTED_PHONE]",
         text
     )
@@ -85,13 +121,21 @@ def redact_pii(text):
     return text
 
 
+def detect_rag_injection(
+    context_docs: list[Any]
+) -> list[dict[str, str]]:
+    """
+    Inspect retrieved context documents
+    for RAG injection indicators.
 
-# RAG Injection Detector
+    Args:
+        context_docs: List of retrieved documents.
 
+    Returns:
+        List of detected RAG injection findings.
+    """
 
-def detect_rag_injection(context_docs):
-
-    findings = []
+    findings: list[dict[str, str]] = []
 
     for doc in context_docs:
 

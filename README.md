@@ -1,8 +1,8 @@
 # SentraGuard Lite
 
-The project has been created for the internship assignment of the Sovereign AI programme.
+SentraGuard Lite is a lightweight GenAI guardrails gateway developed for the Sovereign AI Internship Assignment.
 
-SentraGuard Lite is a lightweight GenAI guardrails gateway that filters incoming prompts, and optionally retrieved context prior to an LLM. Common prompt injection attempts, PII (Personally Identifiable Information) and suspicious instructions within retrieved documents are identified by the system. It uses the results to assign a risk score, and then returns a policy decision.
+The system analyzes user prompts and optional retrieved context before they are sent to an LLM. It detects prompt injection attempts, Personally Identifiable Information (PII), and suspicious instructions within retrieved documents. Based on detected risks, the gateway assigns a risk score and returns a policy decision.
 
 ---
 
@@ -13,12 +13,12 @@ Currently the gateway supports:
 * Prompt Injection Detection
 * PII Detection and Redaction
 * RAG Injection Detection
-* Risk Scoring
-* Prompt Sanitization
+* Risk Scoring and Policy Decisions
+* Prompt and Context Sanitization
 * FastAPI REST API
 * Streamlit Web Interface
 * CLI Interface
-It discusses about Automated testing using pytest.
+* Automated Testing using pytest
 * Dockerized Deployment
 
 ---
@@ -32,7 +32,6 @@ assignment/
 │   ├── core/
 │   │   ├── analyzer.py
 │   │   └── detectors.py
-│   ├── storage/
 │   ├── main.py
 │   └── schemas.py
 │
@@ -56,7 +55,7 @@ assignment/
 
 # Installation
 
-Set up and enable a virtual environment:
+Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
@@ -76,6 +75,21 @@ pip install -r requirements.txt
 
 ---
 
+# Dependency Justification
+
+The project intentionally uses a minimal dependency set to keep the solution lightweight, reproducible, and easy to audit.
+
+| Dependency | Purpose                                        |
+| ---------- | ---------------------------------------------- |
+| FastAPI    | REST API implementation and request validation |
+| Pydantic   | Schema validation and type enforcement         |
+| Uvicorn    | ASGI server for FastAPI                        |
+| Streamlit  | Lightweight web interface                      |
+| Requests   | HTTP communication from the CLI                |
+| Pytest     | Automated testing framework                    |
+
+Additional packages required by Streamlit are installed automatically as part of the Streamlit ecosystem.
+
 # Running the API
 
 Start the FastAPI server:
@@ -88,12 +102,6 @@ API URL:
 
 ```text
 http://127.0.0.1:8000
-```
-
-Swagger Documentation:
-
-```text
-http://127.0.0.1:8000/docs
 ```
 
 ---
@@ -113,17 +121,17 @@ http://localhost:8501
 The UI enables the user to:
 
 * Enter a prompt
-Include optional context documents
+* Provide up to three optional context documents
 * Analyze prompt risk
-View risk score & tags
+* View risk score and risk tags
 * View sanitized output
-Next, check the raw JSON response.Then, look at the raw JSON response.
+* Inspect the raw JSON response
 
 ---
 
 # Running the CLI
 
-The running API communicates with the CLI, which stores the analyses result to a file.
+The CLI communicates with the running API and stores the analysis result in a JSON file.
 
 Command:
 
@@ -137,26 +145,8 @@ Example output:
 Analysis Complete
 Input  : sample_request.json
 Output : out.json
-```
-
-Example generated file:
-
-```json
-{
-  "decision": "transform",
-  "risk_score": 50,
-  "risk_tags": [
-    "prompt_injection"
-  ],
-  "sanitized_prompt": "Ignore previous instructions",
-  "sanitized_context_docs": [],
-  "reasons": [
-    {
-      "tag": "prompt_injection",
-      "evidence": "matched phrase: ignore previous instructions"
-    }
-  ]
-}
+Decision : block
+Risk Score : 50
 ```
 
 ---
@@ -172,7 +162,7 @@ pytest -v
 Expected result:
 
 ```text
-10 passed
+19 passed
 ```
 
 ---
@@ -197,7 +187,7 @@ The Docker setup starts:
 * FastAPI backend
 * Streamlit frontend
 
-No configuration needed.
+No additional configuration is required.
 
 ---
 
@@ -205,7 +195,7 @@ No configuration needed.
 
 ## POST /analyze
 
-Interprets prompt and optional context retrieved.
+Analyzes a prompt and optional retrieved context documents.
 
 ### Sample Request
 
@@ -225,12 +215,19 @@ Interprets prompt and optional context retrieved.
 
 ```json
 {
-  "decision": "transform",
+  "decision": "block",
   "risk_score": 50,
   "risk_tags": [
     "prompt_injection"
   ],
-  "sanitized_prompt": "Ignore previous instructions"
+  "sanitized_prompt": "[BLOCKED]",
+  "sanitized_context_docs": [],
+  "reasons": [
+    {
+      "tag": "prompt_injection",
+      "evidence": "matched phrase: ignore previous instructions"
+    }
+  ]
 }
 ```
 
@@ -238,7 +235,7 @@ Interprets prompt and optional context retrieved.
 
 ## GET /policy
 
-Gets the current configuration of the active detector.
+Returns the active security policy configuration.
 
 ### Sample Response
 
@@ -259,48 +256,65 @@ Gets the current configuration of the active detector.
 
 ---
 
+# Security Notes
+
+Several security-by-default measures have been implemented:
+
+* Interactive API documentation endpoints (`/docs`, `/redoc`, and `/openapi.json`) are disabled to reduce API surface exposure.
+* Prompt injection attempts are detected and scored before requests reach downstream systems.
+* Personally Identifiable Information (PII) is automatically redacted before being returned.
+* Suspicious retrieved documents are removed when RAG injection patterns are detected.
+* Input validation is enforced through Pydantic schemas, including prompt length limits and context document limits.
+* High-confidence prompt injection patterns trigger an immediate block decision.
+* Maximum prompt and context sizes are enforced to reduce denial-of-service risk from excessively large payloads.
+
+
 # Design Notes
 
 ## Assumptions
 
-The system runs completely without Internet and connection.
-No external LLM APIs needed!
-The assignment can be accomplished using a rule-based approach.
-Retrieval documents are trusted inputs, unless verifying for RAG injection patterns.
+* The system operates entirely offline and does not require Internet access.
+* No external LLM APIs are required.
+* The assignment can be implemented using a deterministic rule-based approach.
+* Retrieved documents are treated as trusted inputs unless they contain known RAG injection patterns.
 
 ## Tradeoffs
 
-Use of Pattern matching instead of ML-based was selected to ensure that implementation is lightweight and deterministic and easy to test.
-In-memory processing (no infrastructure) was used to avoid infrastructure complexity.
-The scoring system is kept deliberately simple and "plainspoken.
+* Pattern matching was selected instead of machine learning to keep the implementation lightweight, deterministic, explainable, and easy to test.
+* In-memory processing was used to avoid unnecessary infrastructure complexity.
+* The scoring system is intentionally simple and transparent for ease of auditing and testing.
 
 ## Limitations
 
-Detection can only happen for pre-defined phrases and patterns.
-Only Name+Email Address (and phone numbers) considered as PII.
-No learning is implemented in the system at the moment.
-No persistent audit or authentication is done.
+* Detection is limited to predefined phrases and patterns.
+* Only email addresses and phone numbers are currently detected as PII.
+* No machine-learning based detection is implemented.
+* No persistent storage is maintained.
+* Authentication is not implemented.
 
 ## Future Improvements
 
-Add support for describe-classification via classification using ML.
-Include other PII categories including addresses, IDs.
-Implementable policies and thresholds can be set up.
-Implement authentication and audit logging:
-Archive results of analysis for reporting and monitoring.
+* Machine-learning based prompt injection detection
+* Support for additional PII categories such as addresses and government identifiers
+* External policy configuration through YAML or JSON files
+* Structured audit logging and monitoring
+* Authentication and API key management
+* Rate limiting and abuse detection
+* SIEM integration
+* Advanced validation for vector database and RAG pipelines
 
 ---
 
 # AI Usage Note
 
-AI assisted tools have been utilized for certain development activities including:
+AI-assisted tools were used for selected development activities including:
 
-Copy and paste boilerplate to create the initial project scaffolding.
-Apply Regular Expressions to check if data elements contain sensitive information.Apply Regular Expressions to validate PII data.
-Tutorials on how to troubleshoot and setup Docker
+* Initial project scaffolding and boilerplate generation
+* Assistance in generating and refining regular expressions for PII detection and validation
+* Docker setup and troubleshooting guidance
 * Documentation formatting suggestions
 
-All this, from implementation to testing, debugging, integration to end validation testing, was done manually. The solution submitted was reviewed, modified and tested end to end prior to submission.
+All implementation, integration, debugging, testing, validation, and final review were performed manually before submission.
 
 ---
 
@@ -308,5 +322,6 @@ All this, from implementation to testing, debugging, integration to end validati
 
 **Taarini Kumar**
 
+GitHub Repository:
 
-GitHub: https://github.com/taarinik04
+https://github.com/taarinik04/sentraguard-lite
