@@ -90,6 +90,8 @@ The project intentionally uses a minimal dependency set to keep the solution lig
 
 Additional packages required by Streamlit are installed automatically as part of the Streamlit ecosystem.
 
+---
+
 # Running the API
 
 Start the FastAPI server:
@@ -162,7 +164,7 @@ pytest -v
 Expected result:
 
 ```text
-19 passed
+All automated tests should pass successfully.
 ```
 
 ---
@@ -268,6 +270,7 @@ Several security-by-default measures have been implemented:
 * High-confidence prompt injection patterns trigger an immediate block decision.
 * Maximum prompt and context sizes are enforced to reduce denial-of-service risk from excessively large payloads.
 
+---
 
 # Design Notes
 
